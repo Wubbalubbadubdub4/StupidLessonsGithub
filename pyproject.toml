@@ -1,0 +1,17 @@
+[project]
+name = "uzay-oyunu"
+version = "0.1.0"
+description = "İleri Python Programlama - Uzay Oyunu Projesi"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pytest>=7.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
