@@ -6,6 +6,7 @@
 from typing import Any
 from uzay_oyunu.araclar import hamle_sayaci
 from uzay_oyunu.galaksi import veri_yukle
+from uzay_oyunu.akis import yakit_gostergesi
 
 
 def envanter_metni(credits: bool, engines: bool, copilot: bool) -> str:
@@ -56,7 +57,9 @@ def travel() -> None:
         print(envanter)
 
     planet = galaksi.get("konum", "dünya")
-    yakit = galaksi.get("yakit", 100)
+    baslangic_yakit = galaksi.get("yakit", 100)
+    gosterge = yakit_gostergesi(baslangic_yakit, tuketim=5)
+    yakit = baslangic_yakit
 
     while True:
         destinations = galaksi["baglantilar"].get(planet, [])
@@ -77,7 +80,11 @@ def travel() -> None:
             index = int(secim) - 1
             if 0 <= index < len(destinations):
                 planet = destinations[index]
-                yakit -= 10
+                try:
+                    yakit = next(gosterge)
+                except StopIteration:
+                    print("Yakıtın bitti, uzayda sürükleniyorsun…")
+                    break
                 toplam_hamle = sayac()
             else:
                 print("Geçersiz seçim!")
