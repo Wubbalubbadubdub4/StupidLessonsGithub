@@ -3,9 +3,18 @@
 # Ders: İleri Python Programlama
 # Hafta 4 – Üreteçler ve Akış Testleri
 
+import inspect
 import itertools
+from pathlib import Path
+import types
 import pytest
-from uzay_oyunu.akis import fibonacci, yakit_gostergesi
+from uzay_oyunu.akis import (
+    fibonacci,
+    yakit_gostergesi,
+    satirlari_oku,
+    ayristir,
+    uzun_yolculuklar,
+)
 
 
 # ==============================================================================
@@ -104,4 +113,53 @@ def test_travel_yakit_bitisi(monkeypatch: pytest.MonkeyPatch, capsys: pytest.Cap
     oyun.travel()
     cikti = capsys.readouterr().out
     assert "Yakıtın bitti, uzayda sürükleniyorsun…" in cikti
+
+
+# ==============================================================================
+# Görev 3 Testleri – Seyir Defteri Boru Hattı
+# ==============================================================================
+
+def test_seyir_defteri_toplam_yakit() -> None:
+    """PDF'teki toplam yakıt tüketimi örneğini test eder (88)."""
+    dosya = Path(__file__).parent.parent / "veri" / "seyir.txt"
+    toplam = sum(y for _, _, y in ayristir(satirlari_oku(dosya)))
+    assert toplam == 88
+
+
+def test_seyir_defteri_uzun_yolculuklar() -> None:
+    """PDF'teki 10 eşiği üzerindeki uzun yolculukların hedeflerini test eder."""
+    dosya = Path(__file__).parent.parent / "veri" / "seyir.txt"
+    kayitlar = ayristir(satirlari_oku(dosya))
+    hedefler = [h for _, h, _ in uzun_yolculuklar(kayitlar, 10)]
+    assert hedefler == ["sirius", "centauri", "orion", "kara_delik"]
+
+
+def test_boru_hatti_tembellik_ve_generator() -> None:
+    """Boru hattındaki fonksiyonların bir liste değil, üreteç (generator) döndürdüğünü test eder."""
+    dosya = Path(__file__).parent.parent / "veri" / "seyir.txt"
+
+    g_satirlar = satirlari_oku(dosya)
+    assert inspect.isgenerator(g_satirlar)
+
+    g_kayitlar = ayristir(g_satirlar)
+    assert inspect.isgenerator(g_kayitlar)
+
+    g_uzun = uzun_yolculuklar(g_kayitlar, 10)
+    assert inspect.isgenerator(g_uzun)
+
+
+def test_satirlari_oku_yorum_ve_bosluklari_atlar(tmp_path: Path) -> None:
+    """satirlari_oku üretecinin '#' ile başlayan yorumları ve boş satırları atladığını test eder."""
+    test_dosyasi = tmp_path / "test_seyir.txt"
+    test_dosyasi.write_text(
+        "# Baslangic yorumu\n\n"
+        "dunya -> mars 10\n"
+        "   \n"
+        "# Ara yorum\n"
+        "mars -> jupiter 20\n",
+        encoding="utf-8",
+    )
+    satirlar = list(satirlari_oku(test_dosyasi))
+    assert satirlar == ["dunya -> mars 10", "mars -> jupiter 20"]
+
 

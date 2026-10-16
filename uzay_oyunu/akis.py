@@ -3,8 +3,9 @@
 # Ders: İleri Python Programlama
 # Hafta 4 – Üreteçler ve functools: Akış ve Boru Hattı Modülü
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterable
 import itertools
+from pathlib import Path
 
 
 # ==============================================================================
@@ -56,4 +57,72 @@ def yakit_gostergesi(yakit: int, tuketim: int) -> Generator[int, None, None]:
     while kalan > 0:
         kalan = max(0, kalan - tuketim)
         yield kalan
+
+
+# ==============================================================================
+# Görev 3 – Seyir Defteri Boru Hattı (25 puan)
+# ==============================================================================
+
+def satirlari_oku(yol: str | Path) -> Generator[str, None, None]:
+    """Dosyadaki boş satırları ve '#' ile başlayan yorumları atlayarak temiz satırları üreten üreteç.
+
+    Tüm dosyayı tek seferde belleğe/listeye okumaz, satır satır tembel (lazy) okur.
+
+    Args:
+        yol: Okunacak dosya yolu (str veya Path).
+
+    Yields:
+        str: Temizlenmiş (strip edilmiş) satır metni.
+    """
+    dosya_yolu = Path(yol)
+    with open(dosya_yolu, "r", encoding="utf-8") as dosya:
+        for satir in dosya:
+            temiz = satir.strip()
+            if temiz and not temiz.startswith("#"):
+                yield temiz
+
+
+def ayristir(satirlar: Iterable[str]) -> Generator[tuple[str, str, int], None, None]:
+    """Seyir defteri satırlarını '(kaynak, hedef, yakit)' demetlerine dönüştüren üreteç.
+
+    Beklenen satır formatı: 'dünya -> sirius 12'
+
+    Args:
+        satirlar: Satır metinlerini sağlayan yinelenebilir nesne veya üreteç.
+
+    Yields:
+        tuple[str, str, int]: (kaynak, hedef, harcanan_yakit) demeti.
+    """
+    for satir in satirlar:
+        if "->" not in satir:
+            continue
+        kaynak_kisim, hedef_kisim = satir.split("->", 1)
+        kaynak = kaynak_kisim.strip()
+
+        hedef_parcalar = hedef_kisim.strip().split()
+        if len(hedef_parcalar) >= 2:
+            hedef = hedef_parcalar[0]
+            yakit = int(hedef_parcalar[1])
+            yield (kaynak, hedef, yakit)
+
+
+def uzun_yolculuklar(
+    kayitlar: Iterable[tuple[str, str, int]], esik: int
+) -> Generator[tuple[str, str, int], None, None]:
+    """Yakıt tüketimi verilen eşik değerinden kesinlikle büyük olan kayıtları süzen üreteç.
+
+    Boru hattının son halkasıdır; ara listeleme yapmadan kayıtları tembel akıtır.
+
+    Args:
+        kayitlar: (kaynak, hedef, yakit) demetlerini sağlayan üreteç.
+        esik: Minimum yakıt filtre eşiği.
+
+    Yields:
+        tuple[str, str, int]: Yakıtı eşikten büyük olan seyahat demeti.
+    """
+    for kayit in kayitlar:
+        _, _, yakit = kayit
+        if yakit > esik:
+            yield kayit
+
 
