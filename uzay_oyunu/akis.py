@@ -4,8 +4,10 @@
 # Hafta 4 – Üreteçler ve functools: Akış ve Boru Hattı Modülü
 
 from collections.abc import Generator, Iterable
+from functools import lru_cache
 import itertools
 from pathlib import Path
+from typing import Callable
 
 
 # ==============================================================================
@@ -124,5 +126,47 @@ def uzun_yolculuklar(
         _, _, yakit = kayit
         if yakit > esik:
             yield kayit
+
+
+# ==============================================================================
+# Görev 4 – Önbellekli Rota Sayacı (25 puan)
+# ==============================================================================
+
+def rota_sayaci(baglantilar: dict[str, list[str]]) -> Callable[[str, int], int]:
+    """Verilen gezegen bağlantıları üzerinde tam 'adim' uzunluğundaki farklı rotaların sayısını
+
+    hesaplayan önbellekli (@lru_cache) fonksiyon döndürür.
+
+    Örnek:
+    >>> say = rota_sayaci(galaksi["baglantilar"])
+    >>> say("dünya", 3), say("dünya", 10), say("dünya", 40)
+    (9, 2185, 16832258606399)
+
+    Args:
+        baglantilar: Her gezegenin gidebileceği komşuları belirten sözlük.
+
+    Returns:
+        Callable[[str, int], int]: rota_sayisi(gezegen, adim) fonksiyonu.
+    """
+    @lru_cache(maxsize=None)
+    def rota_sayisi(gezegen: str, adim: int) -> int:
+        """Verilen gezegenden başlayıp tam 'adim' yolculuk yapan rota sayısını hesaplar."""
+        if adim < 0:
+            return 0
+        if adim == 0:
+            return 1
+        return sum(rota_sayisi(komsu, adim - 1) for komsu in baglantilar.get(gezegen, []))
+
+    return rota_sayisi
+
+
+def rota_sayisi_onbelleksiz(baglantilar: dict[str, list[str]], gezegen: str, adim: int) -> int:
+    """Performans kıyaslaması için önbelleksiz özyinelemeli rota sayısı hesabı."""
+    if adim < 0:
+        return 0
+    if adim == 0:
+        return 1
+    return sum(rota_sayisi_onbelleksiz(baglantilar, komsu, adim - 1) for komsu in baglantilar.get(gezegen, []))
+
 
 

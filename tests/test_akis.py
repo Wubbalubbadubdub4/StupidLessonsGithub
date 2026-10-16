@@ -14,7 +14,10 @@ from uzay_oyunu.akis import (
     satirlari_oku,
     ayristir,
     uzun_yolculuklar,
+    rota_sayaci,
+    rota_sayisi_onbelleksiz,
 )
+from uzay_oyunu.galaksi import veri_yukle
 
 
 # ==============================================================================
@@ -161,5 +164,62 @@ def test_satirlari_oku_yorum_ve_bosluklari_atlar(tmp_path: Path) -> None:
     )
     satirlar = list(satirlari_oku(test_dosyasi))
     assert satirlar == ["dunya -> mars 10", "mars -> jupiter 20"]
+
+
+# ==============================================================================
+# Görev 4 Testleri – Önbellekli Rota Sayacı
+# ==============================================================================
+
+def test_rota_sayaci_ornek_ciktilar() -> None:
+    """PDF'te verilen örnek rota sayılarını test eder:
+
+    say('dünya', 3) = 9
+    say('dünya', 10) = 2185
+    say('dünya', 40) = 16832258606399
+    """
+    galaksi = veri_yukle()
+    say = rota_sayaci(galaksi["baglantilar"])
+
+    assert say("dünya", 3) == 9
+    assert say("dünya", 10) == 2185
+    assert say("dünya", 40) == 16832258606399
+
+
+def test_rota_sayaci_cache_etkinligi() -> None:
+    """@lru_cache önbelleğinin devreye girdiğini ve hit sayısının arttığını test eder."""
+    galaksi = veri_yukle()
+    say = rota_sayaci(galaksi["baglantilar"])
+
+    say("dünya", 10)
+    info = say.cache_info()
+    assert info.hits > 0
+    assert info.currsize > 0
+
+    hit_oncesi = info.hits
+    # Aynı çağrıyı tekrar yaptığımızda önbellekten dönmeli ve hit artmalıdır
+    say("dünya", 10)
+    assert say.cache_info().hits == hit_oncesi + 1
+
+
+def test_rota_sayaci_adim_sifir() -> None:
+    """Adım sayısı sıfır olduğunda başlangıç gezegeninin kendisi tek geçerli rota (1) olmalıdır."""
+    galaksi = veri_yukle()
+    say = rota_sayaci(galaksi["baglantilar"])
+
+    for gezegen in galaksi["gezegenler"]:
+        assert say(gezegen, 0) == 1
+
+
+def test_rota_sayaci_onbelleksiz_ile_tutarlilik() -> None:
+    """Önbellekli ve önbelleksiz sürümlerin aynı matematiksel sonucu ürettiğini doğrular."""
+    galaksi = veri_yukle()
+    baglantilar = galaksi["baglantilar"]
+    say_onbellekli = rota_sayaci(baglantilar)
+
+    for adim in range(1, 8):
+        c1 = say_onbellekli("dünya", adim)
+        c2 = rota_sayisi_onbelleksiz(baglantilar, "dünya", adim)
+        assert c1 == c2
+
 
 
