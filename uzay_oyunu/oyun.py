@@ -5,8 +5,10 @@
 
 from typing import Any
 from uzay_oyunu.araclar import hamle_sayaci
+from uzay_oyunu.dekoratorler import log_cagri
 from uzay_oyunu.galaksi import veri_yukle
 from uzay_oyunu.akis import yakit_gostergesi
+from uzay_oyunu.komutlar import KOMUTLAR
 
 
 def envanter_metni(credits: bool, engines: bool, copilot: bool) -> str:
@@ -27,6 +29,7 @@ def envanter_metni(credits: bool, engines: bool, copilot: bool) -> str:
     return "Sende: " + ", ".join(esyalar)
 
 
+@log_cagri
 def hedef_menusu(hedefler: list[str]) -> str:
     """Gidilebilecek hedefleri numaralandırarak menü olarak döndürür."""
     satirlar = ["Nereye gitmek istersin?"]
@@ -40,6 +43,7 @@ def travel() -> None:
 
     Hedefler sabit listeden değil, galaksi['baglantilar'][planet] üzerinden alınır.
     Hamle sayacı her adımda çağrılır ve oyun bitince toplam hamleyi yazar.
+    Oyuncunun girdisi bir komut adıysa komutu çalıştırıp sonucu yazdırır ve menüyü tekrar gösterir.
     """
     galaksi = veri_yukle()
     if not galaksi:
@@ -75,6 +79,20 @@ def travel() -> None:
         if secim.lower() == "q":
             print(f"Oyunu {toplam_hamle} hamlede bitirdin!")
             break
+
+        # Komut sistemi: oyuncunun girdisi bir komut adıysa komutu çalıştır
+        if secim.strip() in KOMUTLAR:
+            fonksiyon, _ = KOMUTLAR[secim.strip()]
+            durum: dict[str, Any] = {
+                "konum": planet,
+                "baglantilar": galaksi["baglantilar"],
+                "credits": credits,
+                "engines": engines,
+                "copilot": copilot,
+            }
+            sonuc = fonksiyon(durum)
+            print(sonuc)
+            continue
 
         try:
             index = int(secim) - 1
